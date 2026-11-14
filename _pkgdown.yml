@@ -1,0 +1,18 @@
+url: https://gojiplus.github.io/dialtone/
+template:
+  bootstrap: 5
+reference:
+- title: Phone numbers
+  contents:
+  - phone_parse
+  - phone_valid
+  - phone_possible
+  - phone_type
+  - phone_region
+  - phone_format
+  - phone_regions
+articles:
+- title: Background
+  navbar: Background
+  contents:
+  - articles/rules

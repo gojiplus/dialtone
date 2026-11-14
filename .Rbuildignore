@@ -1,0 +1,9 @@
+^_pkgdown\.yml$
+^docs$
+^\.github$
+^\.lintr$
+^vignettes/articles$
+^\.codespellrc$
+^cran-comments\.md$
+^CRAN-SUBMISSION$
+^data-raw$

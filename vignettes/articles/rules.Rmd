@@ -1,0 +1,132 @@
+---
+title: "Rules and their sources"
+---
+
+Every phone-number rule in `dialtone` comes from Google's
+[`libphonenumber`](https://github.com/google/libphonenumber) project, pinned to
+release `v9.0.43`. This page lists what already existed on CRAN, what is bundled
+and what is left out, how the XML numbering-plan metadata are compiled, and how
+parity with the Python `phonenumbers` port is verified.
+
+## Why this package
+
+A column of phone numbers in survey or administrative data raises four routine
+questions:
+
+1. Is each value a well-formed phone number (`phone_valid()`) or at least a
+   possible length (`phone_possible()`)?
+2. Which country or non-geographic numbering plan does it belong to
+   (`phone_region()`)?
+3. What kind of line is it — fixed line, mobile, toll-free, VoIP, premium rate
+   (`phone_type()`)?
+4. What is its canonical E.164, international, national or RFC 3966 form
+   (`phone_format()`)?
+
+`dialtone` answers those questions for a character vector at once, without
+requiring a Java installation, without making network requests at run time, and
+returning `FALSE` or `NA` on malformed values rather than stopping.
+
+It validates the *numbering plan* of a number. It cannot say whether a number
+has been assigned to a subscriber or is currently active.
+
+## What already exists
+
+### On CRAN
+
+| Package | License | Covers | Why it is not enough here |
+|---|---|---|---|
+| [`dialr`](https://cran.r-project.org/package=dialr) | GPL-3 | Wraps the Java `libphonenumber` `.jar` (`dialrjars`) via `rJava` | Requires a working Java runtime and `rJava`, which frequently breaks in headless, container or student environments; GPL-3. |
+| [`idcheck`](https://github.com/gojiplus/idcheck) | MIT | National identity schemes and check digits, including `in_mobile` | `in_mobile` is a single ten-digit Indian format rule, not `libphonenumber`. |
+
+### Elsewhere
+
+| Project | License | Used how |
+|---|---|---|
+| [Google `libphonenumber`](https://github.com/google/libphonenumber) `v9.0.43` | Apache-2.0 | Upstream source of `data-raw/upstream/PhoneNumberMetadata.xml` (SHA-256 `5bbfb6f2e63ba1131fc867cd1cf48aa131047772523723a10c230db12fb6e2df`) and `PhoneNumberMetadataForTesting.xml`, as well as the parsing, validation, classification and formatting logic ported to R. |
+| [Python `phonenumbers`](https://github.com/daviddrysdale/python-phonenumbers) `v9.0.43` | Apache-2.0 | Independent port of `libphonenumber` at the same metadata version, used as the test oracle across all upstream example numbers, awkward edge cases and 20,000 random and perturbed numbers. |
+
+## What is compiled from `PhoneNumberMetadata.xml`
+
+`data-raw/build-metadata.R` compiles `data-raw/upstream/PhoneNumberMetadata.xml`
+(`v9.0.43`) into `R/sysdata.rda` (70 KB compressed):
+
+- **245 CLDR regions** (`"AC"` through `"ZW"`) and **9 non-geographic `"001"`
+  calling codes** (`+800`, `+808`, `+870`, `+878`, `+881`, `+882`, `+883`,
+  `+888`, `+979`), for **254 territories** in total.
+- **Country-code-to-region tables**, with the `mainCountryForCode="true"`
+  territory placed first when multiple regions share a calling code (for
+  example, `"US"` first among the 25 NANPA territories under `+1`, `"GB"` first
+  under `+44`, `"RU"` first under `+7`, `"AU"` first under `+61`, `"IT"` first
+  under `+39`).
+- **Possible lengths** (`national` and `localOnly`) per number type and their
+  territory-wide union on `generalDesc` (with `localOnly` lengths that are
+  valid `national` lengths under another type in the same territory removed from
+  `generalDesc`'s local-only set, matching `BuildMetadataFromXml.java`).
+- **Anchored regular expressions** (`^(?:...)$`) for `generalDesc` and the ten
+  number types (`fixedLine`, `mobile`, `tollFree`, `premiumRate`, `sharedCost`,
+  `personalNumber`, `voip`, `pager`, `uan`, `voicemail`), plus
+  `noInternationalDialling`.
+- **Prefix and formatting rules**: `internationalPrefix`,
+  `nationalPrefix`, `nationalPrefixForParsing`, `nationalPrefixTransformRule`
+  (such as Argentina's `0... 15-...` to `9...` mobile transform),
+  `preferredExtnPrefix`, and all `<availableFormats>` `<numberFormat>` rules
+  (both national and `<intlFormat>` overrides, with `$NP` and `$FG` resolved
+  against the first group referenced in the format template).
+
+## How correctness is checked
+
+1. **Every upstream `<exampleNumber>` (5,705 test cases).**
+   `PhoneNumberMetadata.xml` (`v9.0.43`) ships 1,141 `<exampleNumber>` entries
+   across all 254 territories and number types. Each example number is tested in
+   five input forms — raw national string with its territory's `region`, E.164,
+   `INTERNATIONAL`, `NATIONAL` and `RFC3966` — and checked against Python
+   `phonenumbers` `9.0.43` on `country_code`, `national_number`, `possible`,
+   `valid`, `type`, `region` and all four output formats (`E164`,
+   `INTERNATIONAL`, `NATIONAL`, `RFC3966`). Disagreements: **0**.
+2. **Hand-written awkward cases (69 cases).**
+   Shared calling codes (`+1` across US/CA/BS/BB/JM/PR/VI/GU and unassigned
+   NANPA prefixes; `+44` across GB/GG/IM/JE where sub-regions without top-level
+   `leadingDigits` require full pattern matching; `+7` RU/KZ; `+61` AU/CX/CC;
+   `+262` RE/YT; `+358` FI/AX; `+212` MA/EH; `+599` CW/BQ; `+39` IT/VA), all
+   nine `"001"` non-geographic calling codes, significant leading zeros in
+   Italy (`+39 06 6981`), Argentina's `011 15-...` mobile transform vs
+   `011 ...` fixed line, redundant `(0)` trunk prefixes inside international
+   numbers (`+41 (0) 44 668 18 00`), IDD prefixes (`00`, `011`, and `+00`
+   retry), extensions (`ext.`, `x`, `#`, `;ext=`, `,,`, and second-number
+   `/x2303` stripping), RFC 3966 `tel:` URIs with `;phone-context=` and
+   `;isub=`, alpha vanity numbers (`+1-800-FLOWERS`), fullwidth Japanese and
+   Arabic-Indic digits, and 7-digit US local-only numbers. Disagreements with
+   Python `phonenumbers` `9.0.43`: **0**.
+3. **20,000 random and perturbed numbers.**
+   Generated with fixed seed `20261114` across six families:
+   - 4,000 single-digit substitutions of valid example numbers;
+   - 3,000 truncated and extended example numbers;
+   - 3,000 prefix perturbations (`++`, fullwidth `＋`, `00`, `011`, bare
+     calling codes, trunk `0`, `+00`);
+   - 3,000 extension, `Tel:` prefix, `/x999` second-number and RFC 3966
+     `;phone-context=` / `;isub=` variations;
+   - 3,000 vanity alpha strings, fullwidth digits, Arabic-Indic digits and
+     random punctuation separators;
+   - 4,000 random digit strings of lengths 1 to 22 with and without `+`.
+   Checked against Python `phonenumbers` `9.0.43` across all outputs (`parse`,
+   `possible`, `valid`, `type`, `region` and all four `format` modes).
+   Disagreements: **0 / 20,000**.
+4. **Malformed and hostile input.**
+   Empty strings, whitespace, `NA`, 10,000-character strings, malformed
+   `phone-context` parameters, HTML/SQL fragments and emoji return `FALSE` or
+   `NA` without raising a condition.
+5. **Speed.**
+   Distinct strings are deduplicated before regex evaluation and evaluated in
+   vectorized ICU regex batches per calling code. On an Apple M4 (R 4.6.0), one
+   million phone numbers drawn from 10,000 distinct values take 0.13 seconds
+   through `phone_valid()` and 0.21 seconds through `phone_parse()`; the
+   20,000 distinct random and perturbed numbers in the fuzz suite take 1.8
+   seconds.
+
+## Out of scope
+
+- Whether a number is assigned to a subscriber or currently reachable.
+- Finding phone numbers inside running text (`piinata` handles scanning text).
+- Sub-national geocoding, carrier-name lookup, or time-zone lookup tables.
+- Short-number metadata (`ShortNumberMetadata.xml`) such as emergency codes
+  (`911`, `112`).
