@@ -16,6 +16,14 @@ country's numbering plan. It does not mean the number is assigned or active.
 
 ## Installation
 
+From CRAN:
+
+```r
+install.packages("dialtone")
+```
+
+The development version from GitHub:
+
 ```r
 # install.packages("pak")
 pak::pak("gojiplus/dialtone")

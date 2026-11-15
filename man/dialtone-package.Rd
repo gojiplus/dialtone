@@ -6,7 +6,7 @@
 \alias{dialtone-package}
 \title{dialtone: Parse, Validate and Format Phone Numbers}
 \description{
-Parses, validates, classifies and formats phone numbers for every country and non-geographic calling code, fast and vectorized over character vectors. Rules and example numbers come from Google's 'libphonenumber' metadata pinned to a release, with no Java dependency, no runtime downloads and no free-text scanner. Malformed input returns FALSE or NA rather than an error.
+Parses, validates, classifies and formats phone numbers for every country and non-geographic calling code, fast and vectorized over character vectors. Rules and example numbers come from the metadata of Google's 'libphonenumber' \url{https://github.com/google/libphonenumber}, pinned to a release, with no 'Java' dependency, no runtime downloads and no free-text scanner. Malformed input returns FALSE or NA rather than an error.
 }
 \seealso{
 Useful links:

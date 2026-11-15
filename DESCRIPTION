@@ -6,9 +6,10 @@ Authors@R:
       person("Google Inc.", role = "cph", comment = "libphonenumber code and metadata"))
 Description: Parses, validates, classifies and formats phone numbers for every
     country and non-geographic calling code, fast and vectorized over character
-    vectors. Rules and example numbers come from Google's 'libphonenumber'
-    metadata pinned to a release, with no Java dependency, no runtime
-    downloads and no free-text scanner. Malformed input returns FALSE or NA
+    vectors. Rules and example numbers come from the metadata of Google's
+    'libphonenumber' <https://github.com/google/libphonenumber>, pinned to a
+    release, with no 'Java' dependency, no runtime downloads and no
+    free-text scanner. Malformed input returns FALSE or NA
     rather than an error.
 License: Apache License (>= 2)
 URL: https://gojiplus.github.io/dialtone/,
