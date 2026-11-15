@@ -2,7 +2,7 @@
 
 * macOS (local), R 4.6.0
 * GitHub Actions: Ubuntu (release, devel, oldrel-1), macOS (release), Windows (release)
-* win-builder: Windows Server 2022, R 4.6.2 (release)
+* win-builder: Windows Server 2022, R 4.6.2 (release) and R-devel (2026-11-14 r90890 ucrt)
 
 ## R CMD check results
 
