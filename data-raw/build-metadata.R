@@ -315,7 +315,11 @@ for (t_node in territory_nodes) {
     country_code = cc,
     main_country = main_country || length(cc_to_regions[[cc_key]]) == 1L,
     national_prefix = if (!is.null(nat_prefix)) nat_prefix else NA_character_,
-    example_fixed_line = if (!is.null(descs$fixed_line)) descs$fixed_line$example_number else NA_character_,
+    example_fixed_line = if (!is.null(descs$fixed_line)) {
+      descs$fixed_line$example_number
+    } else {
+      NA_character_
+    },
     example_mobile = if (!is.null(descs$mobile)) descs$mobile$example_number else NA_character_,
     stringsAsFactors = FALSE
   )
